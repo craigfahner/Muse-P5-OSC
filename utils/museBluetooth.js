@@ -140,10 +140,12 @@ class museBluetooth {
   
       console.log('> Notifications started');
   
+      //this runs with each update refresh from device
       this.handleNotifications = (event) => {
-        const { value } = event.target;
-        const parsedData = parseData(value, dataType);
-        handleNotifications(parsedData);
+        // const { value } = event.target;
+        // const parsedData = parseData(value, dataType);
+        // handleNotifications(parsedData);
+        handleNotifications(event.target.value);
       };
   
       return characteristic.addEventListener('characteristicvaluechanged', this.handleNotifications);
@@ -273,3 +275,12 @@ class museBluetooth {
     return result;
   }
   
+  /*
+  export async function observableCharacteristic(characteristic: BluetoothRemoteGATTCharacteristic) {
+    await characteristic.startNotifications();
+    const disconnected = fromEvent(characteristic.service!.device, 'gattserverdisconnected');
+    return fromEvent(characteristic, 'characteristicvaluechanged').pipe(
+        takeUntil(disconnected),
+        map((event: Event) => (event.target as BluetoothRemoteGATTCharacteristic).value as DataView),
+    );
+}*/
