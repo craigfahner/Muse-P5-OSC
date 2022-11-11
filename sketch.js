@@ -1,4 +1,5 @@
 let p5Bluetooth;
+let usePPG = true;
 
 
 function setup() {
@@ -63,7 +64,6 @@ function setup() {
             case MUSE_CONTROL_ID:
               controlChar = characteristic
 
-              console.log("create stream button")
               const streamButton = createButton('Stream')
               streamButton.mousePressed(streamButtonClick);
               break;
@@ -75,6 +75,10 @@ function setup() {
             case MUSE_LEFT_FOREHEAD_ID:
               p5Bluetooth.startNotifications(characteristic, eegLeftForehead); 
               break;
+
+              case MUSE_RIGHT_EAR_ID:
+                p5Bluetooth.startNotifications(characteristic, eegRightEar); 
+                break;
             
             default:
               //console.log("Unused characteristic:", characteristic)
@@ -87,25 +91,28 @@ function setup() {
 
       
 
-      function streamButtonClick(){
+      async function streamButtonClick(){
 
         //stream data
   
         if (controlChar){
-          console.log("try to send command via", controlChar)
-          /*
-          await this.sendCommand('h');
-          //'p21'
-          if (this.enablePpg) {
-            preset = 'p50';
-          await this.controlChar.writeValue(encodeCommand(preset));
-        await this.controlChar.writeValue(encodeCommand('s'));
-        await this.resume();
-          */
-         p5Bluetooth.writeTest(0, 1);
+         
+          await controlChar.writeValue(encodeCommand('h')); //pause
+          
+          if (usePPG) {
 
-          //p5Bluetooth.write(controlChar, 'h');//[0x02, 0x64, 0x0a][0x02, 0x73, 0x0a]
-        
+            //use ppg, Muse 2
+            await controlChar.writeValue(encodeCommand('p50')); 
+          
+          } else {
+
+            //no ppg, Muse 1
+            await controlChar.writeValue(encodeCommand('p21'));
+          }
+          
+          await controlChar.writeValue(encodeCommand('s'));
+          await controlChar.writeValue(encodeCommand('d'));
+
         }
 
       }
@@ -119,63 +126,19 @@ function setup() {
       function eegLeftForehead(data) {
         console.log('L forehead data: ', data);
       }
+
+      function eegRightEar(data) {
+        console.log('R ear data: ', data);
+      }
       //console.log(characteristic.uuid);
 
   
     }
   }
 
-  
-
-  
-  
-  // // const serviceUuid = "19b10010-e8f2-537e-4f6c-d104768a1214";
-  // // let myCharacteristic;
-  // // let myValue = 0;
-  // // let myBLE;
-  
-  // function setup() {
-  //         // Create a p5ble class
-  //         myBLE = new p5ble();
-  
-  //         createCanvas(200, 200);
-  //         textSize(20);
-  //         textAlign(CENTER, CENTER);
-  
-  //         // Create a 'Connect' button
-  //         const connectButton = createButton('Connect')
-  //         connectButton.mousePressed(connectToBle);
-  //       }
-  
-  // function connectToBle() {
-  //   // Connect to a device by passing the service UUID
-  //   myBLE.connect(serviceUuid, gotCharacteristics);
-  // }
-  
-  // // A function that will be called once got characteristics
-  // function gotCharacteristics(error, characteristics) {
-  //   if (error) console.log("error: ", error);
-  //   console.log("characteristics: ", characteristics);
-  //   myCharacteristic = characteristics[0];
-  //   // Read the value of the first characteristic
-  //   myBLE.read(myCharacteristic, gotValue);
-  // }
-  
-  // // A function that will be called once got values
-  // function gotValue(error, value) {
-  //   if (error) console.log("error: ", error);
-  //   console.log("value: ", value);
-  //   myValue = value;
-  //   // After getting a value, call p5ble.read() again to get the value again
-  //   myBLE.read(myCharacteristic, gotValue);
-  // }
-  
-  // function setup() {
-  //   createCanvas(400, 400);
-  // }
-  
-  // function draw() {
-  //   background(250);
-  //   text(myValue, 100, 100);
-  // }
+function encodeCommand(cmd) {
+    const encoded = new TextEncoder().encode(`X${cmd}\n`);
+    encoded[0] = encoded.length - 1;
+    return encoded;
+}
   

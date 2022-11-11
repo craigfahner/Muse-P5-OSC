@@ -100,13 +100,8 @@ class p5BLE {
       return callCallback(characteristic.readValue()
         .then(value => parseData(value, dataType)), callback);
     }
-  
-    writeTest(char, value){
-      console.log(char, value)
-    }
-    write(characteristic, inputValue) {
 
-      console.log("try to write", characteristic, inputValue);
+    write(characteristic, inputValue) {
 
       if (!characteristic || !characteristic.uuid) console.error('The characteristic does not exist.');
       const validChar = this.characteristics.find(char => char.uuid === characteristic.uuid);
@@ -118,6 +113,7 @@ class p5BLE {
         bufferToSend = encoder.encode(inputValue);
       } else bufferToSend = Uint8Array.of(inputValue);
       console.log(`Writing ${inputValue} to Characteristic...`);
+      console.log('Returning', bufferToSend);
       return characteristic.writeValue(bufferToSend);
     }
   
