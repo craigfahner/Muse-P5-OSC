@@ -7,9 +7,8 @@
 //import parseData from './utils/parseData';
 
 
-class p5BLE {
+class museBluetooth {
     constructor() {
-      console.log("p5 ble class")
       this.device = null;
       this.server = null;
       this.service = null;
@@ -101,6 +100,21 @@ class p5BLE {
         .then(value => parseData(value, dataType)), callback);
     }
 
+    sendCommand(char, cmd) {
+
+      const encoded = new TextEncoder().encode(`X${cmd}\n`);
+      encoded[0] = encoded.length - 1;
+
+      return char.writeValue(encoded); 
+    }
+
+    encodeCommand(cmd) {
+      const encoded = new TextEncoder().encode(`X${cmd}\n`);
+      encoded[0] = encoded.length - 1;
+      return encoded;
+    }
+
+
     write(characteristic, inputValue) {
 
       if (!characteristic || !characteristic.uuid) console.error('The characteristic does not exist.');
@@ -127,7 +141,6 @@ class p5BLE {
       console.log('> Notifications started');
   
       this.handleNotifications = (event) => {
-        console.log("handling notification")
         const { value } = event.target;
         const parsedData = parseData(value, dataType);
         handleNotifications(parsedData);
