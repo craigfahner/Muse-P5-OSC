@@ -33,7 +33,7 @@ class p5BLE {
         // }
         const servicesArray = serviceUuidOrOptions.filters.find(f => f.services);
         if (servicesArray && servicesArray.services && servicesArray.services[0]) {
-          console.log(servicesArray.services[0]);
+          
           serviceUuid = servicesArray.services[0]; //.toLowerCase();
           options.filters = serviceUuidOrOptions.filters.map((f) => {
             if (f.services) { 

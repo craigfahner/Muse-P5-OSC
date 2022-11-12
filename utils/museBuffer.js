@@ -22,4 +22,8 @@ class MuseBuffer {
         //return updated buffer
         return this._buffer;
     }
+
+    getLength(){
+        return this._buffer.length;
+    }
 }

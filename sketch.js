@@ -19,7 +19,12 @@ function draw() {
   text('BETA:  ', 10, 75);
   text('GAMMA: ', 10, 90);
 
-  text('HEART: ' + ppg.amplitude, 10, 120);
+  if (ppg.heartbeat) {
+    text('HEART bpm: ' + ppg.bpm + ' •', 10, 120);
+  } else {
+    text('HEART bpm: ' + ppg.bpm, 10, 120);
+  }
+
  
   
   // text('ACCEL X: ' + accel.x, 10, 30);
@@ -45,10 +50,18 @@ let accel = {
   z: 0
 }
 
-//TODO: samples, 
 let ppg = {
-  
+  bpm: 0,
   heartbeat:false,
   amplitude: 0,
   buffer: []
+}
+
+let eeg = {
+  delta: 0,
+  theta: 0,
+  alpha: 0,
+  beta: 0,
+  gamma: 0,
+  sensors: []
 }

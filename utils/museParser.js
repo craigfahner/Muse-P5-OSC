@@ -1,6 +1,19 @@
-
-
 //PARSING FUNCTIONS
+//eeg samples
+function decodeUnsigned12BitData(samples) {
+    const samples12Bit = [];
+    for (let i = 0; i < samples.length; i++) {
+        if (i % 3 === 0) {
+            samples12Bit.push((samples[i] << 4) | (samples[i + 1] >> 4));
+        } else {
+            samples12Bit.push(((samples[i] & 0xf) << 8) | samples[i + 1]);
+            i++;
+        }
+    }
+    return samples12Bit;
+}
+
+//ppg samples
 function decodeUnsigned24BitData(samples) {
     const samples24Bit = [];
     for (let i = 0; i < samples.length; i = i + 3) {

@@ -1,56 +1,25 @@
 //parsing methods
 //https://github.com/urish/muse-js/blob/4e864578c55dd7e26d85b429863f47ccabac54a0/src/lib/muse-parse.ts
+
 //streaming listeners   
 function didReceiveEegLeftEar(data) {
-
-    console.log('L ear data:', data);
-
+    // processEEG(0, data);
 }
 
 function didReceiveEegLeftForehead(data) {
-    //console.log('L forehead data: ', data);
+    // processEEG(1, data);
 }
 
 function didReceiveEegRightEar(data) {
-    //console.log('R ear data: ', data);
+    // processEEG(2, data);
 }
 
 function didReceiveEegRightForehead(data) {
-    //console.log('R forehead data: ', data);
+    // processEEG(3, data);
 }
 
-let ppgBuffer = new MuseBuffer(64);
-
 function didReceivePpg(data) {
-
-    //process data buffer into samples and save
-    let ppgSamples = decodeUnsigned24BitData(new Uint8Array(data.buffer).subarray(2));
-    
-    //add decoded samples to the buffer
-    ppg.buffer = ppgBuffer.update(ppgSamples);
-
-    //calc the high and low values of the buffer
-    let ppgMin = Math.min(...ppg.buffer);
-    let ppgMax = Math.max(...ppg.buffer);
-
-    //grab most recent value in ppg array
-    ppg.amplitude = ppg.buffer[ppg.buffer.length-1];
-
-    //what percentage is it of the max?
-    let ppgPercent = ppgLast / ppgMax;
-
-    //if recent value is near the max value, it's a heartbeat
-    if (ppgPercent > 0.998) { //threshold for a beat detection
-        //when heart beat is occurring
-        ppg.heartbeat = true;
-      } else {
-        //else off
-        ppg.heartbeat = false;
-      }
-
-    
-    
-
+    processPPG(data); 
 }
 
 function didReceiveAccel(data) {
@@ -78,6 +47,6 @@ function didReceiveGyro(data) {
 }
 
 function didReceiveBattery(data) {
-    batteryLevel = data.getUint16(2) / 512,
+    batteryLevel = data.getUint16(2) / 512;
     console.log("Battery level:", batteryLevel, "%");
 }
