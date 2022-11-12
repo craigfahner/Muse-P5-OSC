@@ -1,286 +1,121 @@
-// Copyright (c) 2018 p5ble
-//
-// This software is released under the MIT License.
-// https://opensource.org/licenses/MIT
+//ID for muse devices
+const MUSE_SERVICE = 0xfe8d
 
-//import callCallback from './utils/callcallback';
-//import parseData from './utils/parseData';
+//channel to send commands to muse
+let controlChar;
+const MUSE_CONTROL_ID = '273e0001-4c4d-454d-96be-f03bac821358';
 
+//eeg sensors
+const MUSE_LEFT_EAR_ID = '273e0003-4c4d-454d-96be-f03bac821358';
+const MUSE_LEFT_FOREHEAD_ID = '273e0004-4c4d-454d-96be-f03bac821358';
+const MUSE_RIGHT_FOREHEAD_ID = '273e0005-4c4d-454d-96be-f03bac821358';
+const MUSE_RIGHT_EAR_ID = '273e0006-4c4d-454d-96be-f03bac821358';
 
-class museBluetooth {
-    constructor() {
-      this.device = null;
-      this.server = null;
-      this.service = null;
-      this.characteristics = [];
-      this.handleNotifications = null;
-    }
-  
-    connect(serviceUuidOrOptions, callback) {
-      let options = {};
-      let serviceUuid;
-  
-      if (typeof serviceUuidOrOptions === 'string') {
-        serviceUuid = serviceUuidOrOptions.toLowerCase();
-        options = {
-          filters: [{
-            services: [serviceUuid],
-          }],
-        };
-      } else if (typeof serviceUuidOrOptions === 'object' && serviceUuidOrOptions.filters) {
-        // Options = {
-        //   filters: [{ namePrefix: "name" }, { services: ["2A5A20B9-0000-4B9C-9C69-4975713E0FF2"] }]
-        // }
-        const servicesArray = serviceUuidOrOptions.filters.find(f => f.services);
-        if (servicesArray && servicesArray.services && servicesArray.services[0]) {
-          console.log(servicesArray.services[0]);
-          serviceUuid = servicesArray.services[0]; //.toLowerCase();
-          options.filters = serviceUuidOrOptions.filters.map((f) => {
-            if (f.services) { 
-              const newF = {};
-              newF.services = f.services;
-              return newF;
-            }
-            return f;
-          });
-        } else {
-          console.error('Please pass an option object in this format: options = { filters: [{ services: [serviceUuid] }]} ');
+//battery
+const MUSE_BATTERY_ID = '273e000b-4c4d-454d-96be-f03bac821358';
+
+//other sensors
+const MUSE_GYROSCOPE_ID = '273e0009-4c4d-454d-96be-f03bac821358';
+const MUSE_ACCELEROMETER_ID = '273e000a-4c4d-454d-96be-f03bac821358';
+const MUSE_PPG_ID = '273e0010-4c4d-454d-96be-f03bac821358';
+
+function connectToMuse() {
+
+    //connection options, use MUSE id to search for nearby muse devices
+    let connectionOptions = { filters: [{ services: [MUSE_SERVICE] }] };
+
+    //ask bluetooth to connect
+    bluetooth.connect(connectionOptions, museConnected);
+}
+
+//connected listener
+async function initMuseStreaming(characteristics) {
+
+    console.log("Connected to Muse");
+    let controlActive = false;
+
+    //go through each characteristic and add listeners
+    for (let i = 0; i < characteristics.length; i++) {
+
+        //get characteristic
+        let characteristic = characteristics[i];
+
+        //search by UUID 
+        switch (characteristic.uuid) {
+
+            case MUSE_CONTROL_ID:
+
+                //control is how to send message to the Muse, like 'start' and 'stop'
+                controlChar = characteristic;
+                controlActive = true; //ok to proceed with streaming
+                break;
+
+            //the EEG sensors
+            case MUSE_LEFT_EAR_ID:
+                bluetooth.startNotifications(characteristic, didReceiveEegLeftEar);
+                break;
+
+            case MUSE_LEFT_FOREHEAD_ID:
+                bluetooth.startNotifications(characteristic, didReceiveEegLeftForehead);
+                break;
+
+            case MUSE_RIGHT_EAR_ID:
+                bluetooth.startNotifications(characteristic, didReceiveEegRightEar);
+                break;
+
+            case MUSE_RIGHT_FOREHEAD_ID:
+                bluetooth.startNotifications(characteristic, didReceiveEegRightForehead);
+                break;
+
+            case MUSE_PPG_ID:
+                bluetooth.startNotifications(characteristic, didReceivePpg);
+                break;
+
+            case MUSE_ACCELEROMETER_ID:
+                bluetooth.startNotifications(characteristic, didReceiveAccel);
+                break;
+
+            case MUSE_GYROSCOPE_ID:
+                bluetooth.startNotifications(characteristic, didReceiveGyro);
+                break;
+
+            case MUSE_BATTERY_ID:
+                bluetooth.startNotifications(characteristic, didReceiveBattery);
+                break;
+
+            default:
+                //console.log("Unused characteristic:", characteristic)
+                break;
         }
+    }
+    return controlActive;
+}
+
+async function startMuse() {
+
+    //to stream data, send this sequence to headset
+    //halt (a pause command)
+    //connection type (PPG or no PPG)
+    //start command
+    //resume command
+    //this sequence, in a row, starts the headset's streaming data
+
+    if (controlChar) {
+  
+      await bluetooth.sendCommand(controlChar, 'h'); //halt
+  
+      if (usePPG) {
+  
+        //use ppg, Muse 2
+        await bluetooth.sendCommand(controlChar, 'p50');
+  
       } else {
-        console.error('Please pass in a serviceUuid string or option object, e.g. options = { filters: [{ services: [serviceUuid] }]} ');
+  
+        //no ppg, Muse 1
+        await bluetooth.sendCommand(controlChar, 'p21');
       }
   
-      
-
-      console.log('Requesting Bluetooth Device...');
-    
-      return callCallback(navigator.bluetooth.requestDevice(options)
-        .then((device) => {
-          this.device = device;
-          console.log(`BLE: Device found: ${device.name}`);
-          return device.gatt.connect();
-        })
-        .then((server) => {
-          this.server = server;
-          console.log('BLE: Getting service...');
-          return server.getPrimaryService(serviceUuid);
-        })
-        .then((service) => {
-          this.service = service;
-          console.log('BLE: Getting characteristics...');
-          return service.getCharacteristics();
-        })
-        .then((characteristics) => {
-          this.characteristics = characteristics;
-          console.log('BLE: Characteristics found');
-          return characteristics;
-        })
-        .catch((error) => {
-          console.error(`BLE: Error: ${error}`);
-        }), callback);
-    }
-  
-    async read(characteristic, dataTypeOrcallback, cb) {
-      let callback;
-      let dataType;
-      if (typeof dataTypeOrcallback === 'function') {
-        callback = dataTypeOrcallback;
-      } else if (typeof dataTypeOrcallback === 'string') {
-        dataType = dataTypeOrcallback;
-      }
-      if (typeof cb === 'function') {
-        callback = cb;
-      }
-  
-      if (!characteristic || !characteristic.uuid) console.error('The characteristic does not exist.');
-      const validChar = this.characteristics.find(char => char.uuid === characteristic.uuid);
-      if (!validChar) return console.error('The characteristic does not exist.');
-  
-      return callCallback(characteristic.readValue()
-        .then(value => parseData(value, dataType)), callback);
-    }
-
-    sendCommand(char, cmd) {
-
-      const encoded = new TextEncoder().encode(`X${cmd}\n`);
-      encoded[0] = encoded.length - 1;
-
-      return char.writeValue(encoded); 
-    }
-
-    encodeCommand(cmd) {
-      const encoded = new TextEncoder().encode(`X${cmd}\n`);
-      encoded[0] = encoded.length - 1;
-      return encoded;
-    }
-
-
-    write(characteristic, inputValue) {
-
-      if (!characteristic || !characteristic.uuid) console.error('The characteristic does not exist.');
-      const validChar = this.characteristics.find(char => char.uuid === characteristic.uuid);
-      if (!validChar) return console.error('The characteristic does not exist.');
-  
-      let bufferToSend;
-      if (typeof inputValue === 'string') {
-        const encoder = new TextEncoder('utf-8');
-        bufferToSend = encoder.encode(inputValue);
-      } else bufferToSend = Uint8Array.of(inputValue);
-      console.log(`Writing ${inputValue} to Characteristic...`);
-      console.log('Returning', bufferToSend);
-      return characteristic.writeValue(bufferToSend);
-    }
-  
-    async startNotifications(characteristic, handleNotifications, dataType) {
-      if (!characteristic || !characteristic.uuid) console.error('The characteristic does not exist.');
-      const validChar = this.characteristics.find(char => char.uuid === characteristic.uuid);
-      if (!validChar) return console.error('The characteristic does not exist.');
-  
-      await characteristic.startNotifications();
-  
-      console.log('> Notifications started');
-  
-      //this runs with each update refresh from device
-      this.handleNotifications = (event) => {
-        // const { value } = event.target;
-        // const parsedData = parseData(value, dataType);
-        // handleNotifications(parsedData);
-        handleNotifications(event.target.value);
-      };
-  
-      return characteristic.addEventListener('characteristicvaluechanged', this.handleNotifications);
-    }
-  
-    async stopNotifications(characteristic) {
-      if (!characteristic || !characteristic.uuid) console.error('The characteristic does not exist.');
-      const validChar = this.characteristics.find(char => char.uuid === characteristic.uuid);
-      if (!validChar) return console.error('The characteristic does not exist.');
-  
-      try {
-        await characteristic.stopNotifications();
-  
-        if (this.handleNotifications) {
-          console.log('> Notifications stopped');
-          return characteristic.removeEventListener('characteristicvaluechanged', this.handleNotifications);
-        }
-        return console.log('> Notifications stopped');
-      } catch (error) {
-        return console.error(`Error: ${error}`);
-      }
-    }
-  
-    disconnect() {
-      if (!this.device) return;
-      console.log('Disconnecting from Bluetooth Device...');
-      if (this.device.gatt.connected) {
-        this.device.gatt.disconnect();
-      } else {
-        console.log('> Bluetooth Device is already disconnected');
-      }
-    }
-  
-    onDisconnected(handleDisconnected) {
-      if (!this.device) return console.error('There is no device connected.');
-      return this.device.addEventListener('gattserverdisconnected', handleDisconnected);
-    }
-  
-    isConnected() {
-      if (!this.device) return false;
-      if (this.device.gatt.connected) {
-        return true;
-      }
-      return false;
+      await bluetooth.sendCommand(controlChar, 's'); //start
+      await bluetooth.sendCommand(controlChar, 'd'); //resume
     }
   }
-  
-  //module.exports = p5ble;
-  
-  //callcallback.js
-  function callCallback(promise, callback) {
-    if (callback) {
-      promise
-        .then((result) => {
-          callback(undefined, result);
-          return result;
-        })
-        .catch((error) => {
-          callback(error);
-          return error;
-        });
-    }
-    return promise;
-  }
-  
-  //parseData.js
-  function parseData(data, t, encoding) {
-    const type = t ? t.toLowerCase() : 'unit8';
-    let result;
-    let decoder;
-    switch (type) {
-      case 'unit8':
-        result = data.getUint8(0);
-        break;
-  
-      case 'uint16':
-        result = data.getUint16(0);
-        break;
-  
-      case 'uint32':
-        result = data.getUint32(0);
-        break;
-  
-      case 'int8':
-        result = data.getInt8(0);
-        break;
-  
-      case 'int16':
-        result = data.getInt16(0);
-        break;
-  
-      case 'int32':
-        result = data.getInt32(0);
-        break;
-  
-      case 'float32':
-        result = data.getFloat32(0, true); // littleEndian
-        break;
-  
-      case 'float32-bigEndian':
-        result = data.getFloat32(0); // BigEndian
-        break;
-  
-      case 'float64':
-        result = data.getFloat64(0, true); // littleEndian
-        break;
-  
-      case 'float64-bigEndian':
-        result = data.getFloat64(0); // BigEndian
-        break;
-  
-      case 'string':
-        // TODO: have the ability to choose different string encoding: like utf16
-        decoder = new TextDecoder(encoding || 'utf8');
-        result = decoder.decode(data);
-        break;
-  
-      case 'custom':
-        // let the user do the parsing
-        result = data;
-        break;
-  
-      default:
-        result = data.getUint8(0);
-        break;
-    }
-    return result;
-  }
-  
-  /*
-  export async function observableCharacteristic(characteristic: BluetoothRemoteGATTCharacteristic) {
-    await characteristic.startNotifications();
-    const disconnected = fromEvent(characteristic.service!.device, 'gattserverdisconnected');
-    return fromEvent(characteristic, 'characteristicvaluechanged').pipe(
-        takeUntil(disconnected),
-        map((event: Event) => (event.target as BluetoothRemoteGATTCharacteristic).value as DataView),
-    );
-}*/
