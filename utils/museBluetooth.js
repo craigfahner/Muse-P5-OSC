@@ -1,3 +1,6 @@
+//bluetooth class 
+let bluetoothConnection;
+
 //ID for muse devices
 const MUSE_SERVICE = 0xfe8d
 
@@ -25,7 +28,7 @@ function connectToMuse() {
     let connectionOptions = { filters: [{ services: [MUSE_SERVICE] }] };
 
     //ask bluetooth to connect
-    bluetooth.connect(connectionOptions, museConnected);
+    bluetoothConnection.connect(connectionOptions, museConnected);
 }
 
 //connected listener
@@ -52,35 +55,35 @@ async function initMuseStreaming(characteristics) {
 
             //the EEG sensors
             case MUSE_LEFT_EAR_ID:
-                bluetooth.startNotifications(characteristic, didReceiveEegLeftEar);
+                bluetoothConnection.startNotifications(characteristic, didReceiveEegLeftEar);
                 break;
 
             case MUSE_LEFT_FOREHEAD_ID:
-                bluetooth.startNotifications(characteristic, didReceiveEegLeftForehead);
+                bluetoothConnection.startNotifications(characteristic, didReceiveEegLeftForehead);
                 break;
 
             case MUSE_RIGHT_EAR_ID:
-                bluetooth.startNotifications(characteristic, didReceiveEegRightEar);
+                bluetoothConnection.startNotifications(characteristic, didReceiveEegRightEar);
                 break;
 
             case MUSE_RIGHT_FOREHEAD_ID:
-                bluetooth.startNotifications(characteristic, didReceiveEegRightForehead);
+                bluetoothConnection.startNotifications(characteristic, didReceiveEegRightForehead);
                 break;
 
             case MUSE_PPG_ID:
-                bluetooth.startNotifications(characteristic, didReceivePpg);
+                bluetoothConnection.startNotifications(characteristic, didReceivePpg);
                 break;
 
             case MUSE_ACCELEROMETER_ID:
-                bluetooth.startNotifications(characteristic, didReceiveAccel);
+                bluetoothConnection.startNotifications(characteristic, didReceiveAccel);
                 break;
 
             case MUSE_GYROSCOPE_ID:
-                bluetooth.startNotifications(characteristic, didReceiveGyro);
+                bluetoothConnection.startNotifications(characteristic, didReceiveGyro);
                 break;
 
             case MUSE_BATTERY_ID:
-                bluetooth.startNotifications(characteristic, didReceiveBattery);
+                bluetoothConnection.startNotifications(characteristic, didReceiveBattery);
                 break;
 
             default:
@@ -102,20 +105,20 @@ async function startMuse() {
 
     if (controlChar) {
   
-      await bluetooth.sendCommand(controlChar, 'h'); //halt
+      await bluetoothConnection.sendCommand(controlChar, 'h'); //halt
   
       if (usePPG) {
   
         //use ppg, Muse 2
-        await bluetooth.sendCommand(controlChar, 'p50');
+        await bluetoothConnection.sendCommand(controlChar, 'p50');
   
       } else {
   
         //no ppg, Muse 1
-        await bluetooth.sendCommand(controlChar, 'p21');
+        await bluetoothConnection.sendCommand(controlChar, 'p21');
       }
   
-      await bluetooth.sendCommand(controlChar, 's'); //start
-      await bluetooth.sendCommand(controlChar, 'd'); //resume
+      await bluetoothConnection.sendCommand(controlChar, 's'); //start
+      await bluetoothConnection.sendCommand(controlChar, 'd'); //resume
     }
   }
