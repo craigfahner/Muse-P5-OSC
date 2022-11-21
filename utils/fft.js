@@ -6,56 +6,6 @@
  *
  */
 
-// Fourier Transform Module used by FFT
-function FourierTransform(bufferSize, sampleRate) {
-    this.bufferSize = bufferSize;
-    this.sampleRate = sampleRate;
-    this.bandwidth = 2 / bufferSize * sampleRate / 2;
-
-    this.spectrum = new Float64Array(bufferSize / 2);
-    this.real = new Float64Array(bufferSize);
-    this.imag = new Float64Array(bufferSize);
-
-    this.peakBand = 0;
-    this.peak = 0;
-
-    /**
-     * Calculates the *middle* frequency of an FFT band.
-     *
-     * @param {Number} index The index of the FFT band.
-     *
-     * @returns The middle frequency in Hz.
-     */
-    this.getBandFrequency = function (index) {
-        return this.bandwidth * index + this.bandwidth / 2;
-    };
-
-    this.calculateSpectrum = function () {
-        var spectrum = this.spectrum,
-            real = this.real,
-            imag = this.imag,
-            bSi = 2 / this.bufferSize,
-            sqrt = Math.sqrt,
-            rval,
-            ival,
-            mag;
-
-        for (var i = 0, N = bufferSize / 2; i < N; i++) {
-            rval = real[i];
-            ival = imag[i];
-            mag = bSi * sqrt(rval * rval + ival * ival);
-
-            if (mag > this.peak) {
-                this.peakBand = i;
-                this.peak = mag;
-            }
-
-            spectrum[i] = mag;
-        }
-    };
-}
-
-
 /**
  * FFT is a class for calculating the Discrete Fourier Transform of a signal
  * with the Fast Fourier Transform algorithm.
@@ -68,13 +18,34 @@ function FourierTransform(bufferSize, sampleRate) {
 class FFT {
 
     constructor(bufferSize, sampleRate) {
+        
+        //save incoming vars
+        this.bufferSize = bufferSize;
+        this.sampleRate = sampleRate;
+
+        //init and calc vars
+        this.rval; 
+        this.ival;
+        this.mag;
+        this.sqrt = Math.sqrt;
+        this.bandwidth = 2 / bufferSize * sampleRate / 2;
+        this.bSi = 2 / this.bufferSize;
+        
+
+        //init arrays that hold the real and imaginary data
+        this.spectrum = new Float64Array(bufferSize / 2);
+        this.real = new Float64Array(bufferSize);
+        this.imag = new Float64Array(bufferSize);
+
+        //peaks 
+        this.peakBand = 0;
+        this.peak = 0;
+
         //save length
         this.maxLength = length;
         //fill buffer with zeroes to length
         this._buffer = new Array(length).fill(0);
-    
-        FourierTransform.call(this, bufferSize, sampleRate);
-
+        
         this.reverseTable = new Uint32Array(bufferSize);
 
         var limit = 1;
@@ -109,6 +80,7 @@ class FFT {
      * @returns The frequency spectrum array
      */
 
+    //called by code that needs to convert time based data into a frequency spectrum
     forward(buffer) {
         
         // Locally scope variables for speed up
@@ -121,7 +93,7 @@ class FFT {
             spectrum = this.spectrum;
 
         var k = Math.floor(Math.log(bufferSize) / Math.LN2);
-
+        
         if (Math.pow(2, k) !== bufferSize) { throw "Invalid buffer size, must be a power of 2."; }
         if (bufferSize !== buffer.length) { throw "Supplied buffer is not the same size as defined FFT. FFT Size: " + bufferSize + " Buffer Size: " + buffer.length; }
 
@@ -135,15 +107,14 @@ class FFT {
             ti,
             tmpReal,
             i;
-
+     
         for (i = 0; i < bufferSize; i++) {
             real[i] = buffer[reverseTable[i]];
             imag[i] = 0;
         }
 
         while (halfSize < bufferSize) {
-            //phaseShiftStepReal = Math.cos(-Math.PI/halfSize);
-            //phaseShiftStepImag = Math.sin(-Math.PI/halfSize);
+            
             phaseShiftStepReal = cosTable[halfSize];
             phaseShiftStepImag = sinTable[halfSize];
 
@@ -174,81 +145,21 @@ class FFT {
             halfSize = halfSize << 1;
         }
 
-        return this.calculateSpectrum();
-    }
+        //update spectrum
+        for (var i = 0, N = bufferSize / 2; i < N; i++) {
+            this.rval = real[i];
+            this.ival = imag[i];
+            this.mag = this.bSi * sqrt(this.rval * this.rval + this.ival * this.ival);
 
-    inverse(real, imag) {
-        // Locally scope variables for speed up
-        var bufferSize = this.bufferSize,
-            cosTable = this.cosTable,
-            sinTable = this.sinTable,
-            reverseTable = this.reverseTable,
-            spectrum = this.spectrum;
-
-        real = real || this.real;
-        imag = imag || this.imag;
-
-        var halfSize = 1,
-            phaseShiftStepReal,
-            phaseShiftStepImag,
-            currentPhaseShiftReal,
-            currentPhaseShiftImag,
-            off,
-            tr,
-            ti,
-            tmpReal,
-            i;
-
-        for (i = 0; i < bufferSize; i++) {
-            imag[i] *= -1;
-        }
-
-        var revReal = new Float64Array(bufferSize);
-        var revImag = new Float64Array(bufferSize);
-
-        for (i = 0; i < real.length; i++) {
-            revReal[i] = real[reverseTable[i]];
-            revImag[i] = imag[reverseTable[i]];
-        }
-
-        real = revReal;
-        imag = revImag;
-
-        while (halfSize < bufferSize) {
-            phaseShiftStepReal = cosTable[halfSize];
-            phaseShiftStepImag = sinTable[halfSize];
-            currentPhaseShiftReal = 1;
-            currentPhaseShiftImag = 0;
-
-            for (var fftStep = 0; fftStep < halfSize; fftStep++) {
-                i = fftStep;
-
-                while (i < bufferSize) {
-                    off = i + halfSize;
-                    tr = (currentPhaseShiftReal * real[off]) - (currentPhaseShiftImag * imag[off]);
-                    ti = (currentPhaseShiftReal * imag[off]) + (currentPhaseShiftImag * real[off]);
-
-                    real[off] = real[i] - tr;
-                    imag[off] = imag[i] - ti;
-                    real[i] += tr;
-                    imag[i] += ti;
-
-                    i += halfSize << 1;
-                }
-
-                tmpReal = currentPhaseShiftReal;
-                currentPhaseShiftReal = (tmpReal * phaseShiftStepReal) - (currentPhaseShiftImag * phaseShiftStepImag);
-                currentPhaseShiftImag = (tmpReal * phaseShiftStepImag) + (currentPhaseShiftImag * phaseShiftStepReal);
+            if (this.mag > this.peak) {
+                this.peakBand = i;
+                this.peak = this.mag;
             }
 
-            halfSize = halfSize << 1;
+            spectrum[i] = this.mag;
         }
-
-        var buffer = new Float64Array(bufferSize); // this should be reused instead
-        for (i = 0; i < bufferSize; i++) {
-            buffer[i] = real[i] / bufferSize;
-        }
-
-        return buffer;
+        
+        //console.log("fft spec", spectrum);
+        return spectrum;
     }
 }

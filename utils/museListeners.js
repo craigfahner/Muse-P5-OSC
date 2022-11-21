@@ -3,19 +3,19 @@
 
 //streaming listeners   
 function didReceiveEegLeftEar(data) {
-    // processEEG(0, data);
+    processEEG(0, data);
 }
 
 function didReceiveEegLeftForehead(data) {
-    // processEEG(1, data);
+    processEEG(1, data);
 }
 
 function didReceiveEegRightEar(data) {
-    // processEEG(2, data);
+    processEEG(2, data);
 }
 
 function didReceiveEegRightForehead(data) {
-    // processEEG(3, data);
+    processEEG(3, data);
 }
 
 function didReceivePpg(data) {
