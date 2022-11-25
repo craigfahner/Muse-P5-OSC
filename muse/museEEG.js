@@ -1,10 +1,36 @@
+//delta, theta, alpha, beta, gamma waves
+class EEGWave {
+
+    //create wave with the low and high end of the wave, in Hz
+    //for example, alpha is 8Hz - 12 Hz
+    //so binLow = 8, binHigh = 12
+    constructor(binLow, binHigh) {
+        this.binLow = binLow;
+        this.binHigh = binHigh
+        this.spectrum = []
+        this.average = 0;
+    }
+
+    //receive frequency spectrum for just this wave from FFT
+    //for example, alpha would just receive the 8 - 12 Hz slices of the frequency spectrum
+    update(withSpectrum) {
+
+        //average out each slice to one, averaged value for the whole brainwave
+        //for example, alpha would take the values from 8Hz, 9Hz, 10Hz, and 11Hz
+        //and average them into one value
+        this.spectrum = withSpectrum;
+        this.average = withSpectrum.reduce((a, b) => a + b) / withSpectrum.length;
+
+    }
+}
+
 class EEGSensor {
 
     constructor() {
 
         //data buffer
         this.EEG_BUFFER_SIZE = 256;
-        this.buffer = new MuseBuffer(this.EEG_BUFFER_SIZE);
+        this.buffer = new MuseDataBuffer(this.EEG_BUFFER_SIZE);
 
         //fft to process time based samples in buffer into a frequency based spectrum
         let MUSE_SAMPLE_RATE = 220;
@@ -103,6 +129,22 @@ class EEGSensor {
 
 }
 
+//vars (need to be after the class definitions)
+
+let leftEar = new EEGSensor();
+let leftForehead = new EEGSensor();
+let rightForehead = new EEGSensor();
+let rightEar = new EEGSensor();
+
+let sensors = [
+    leftEar,
+    leftForehead,
+    rightForehead,
+    rightEar
+]
+let sensorTotal = sensors.length;
+
+let spectrum = new Array(leftEar.EEG_BUFFER_SIZE/2).fill(0);
 
 //global scope func to process EEG data per sensor
 function processEEG(sensor, data) {
@@ -145,39 +187,15 @@ function processEEG(sensor, data) {
 
     //then average out the totals by 4 (sensor total)
     //resulting in the average brainwave strength across the entire headband
-    eeg.delta = Math.round(deltaTotal / sensorTotal);
-    eeg.theta = Math.round(thetaTotal / sensorTotal);
-    eeg.alpha = Math.round(alphaTotal / sensorTotal);
-    eeg.beta = Math.round(betaTotal / sensorTotal);
-    eeg.gamma = Math.round(gammaTotal / sensorTotal);
+    eeg.delta = deltaTotal / sensorTotal;
+    eeg.theta = thetaTotal / sensorTotal;
+    eeg.alpha = alphaTotal / sensorTotal;
+    eeg.beta = betaTotal / sensorTotal;
+    eeg.gamma = gammaTotal / sensorTotal;
 
 }
 
-//delta, theta, alpha, beta, gamma waves
-class EEGWave {
 
-    //create wave with the low and high end of the wave, in Hz
-    //for example, alpha is 8Hz - 12 Hz
-    //so binLow = 8, binHigh = 12
-    constructor(binLow, binHigh) {
-        this.binLow = binLow;
-        this.binHigh = binHigh
-        this.spectrum = []
-        this.average = 0;
-    }
-
-    //receive frequency spectrum for just this wave from FFT
-    //for example, alpha would just receive the 8 - 12 Hz slices of the frequency spectrum
-    update(withSpectrum) {
-
-        //average out each slice to one, averaged value for the whole brainwave
-        //for example, alpha would take the values from 8Hz, 9Hz, 10Hz, and 11Hz
-        //and average them into one value
-        this.spectrum = withSpectrum;
-        this.average = withSpectrum.reduce((a, b) => a + b) / withSpectrum.length;
-
-    }
-}
 
 //helper
 function _getAverageByIndex(arrays) {
@@ -204,20 +222,5 @@ function _getAverageByIndex(arrays) {
 }
 
 
-//vars (need to be after the class definitions)
 
-let leftEar = new EEGSensor();
-let leftForehead = new EEGSensor();
-let rightForehead = new EEGSensor();
-let rightEar = new EEGSensor();
-
-let sensors = [
-    leftEar,
-    leftForehead,
-    rightForehead,
-    rightEar
-]
-let sensorTotal = sensors.length;
-
-let spectrum = new Array(leftEar.EEG_BUFFER_SIZE/2).fill(0);
  

@@ -1,5 +1,7 @@
-let ppgBuffer = new MuseBuffer(64);
+let ppgBuffer = new MuseDataBuffer(64);
 let heartbeatTimestamps = []
+let BEAT_DETECTION_THRESHOLD = 0.9982 //0.998
+let BPM_SAMPLES_MAX = 10
 
 function processPPG(data) {
 
@@ -20,7 +22,7 @@ function processPPG(data) {
     //console.log("ppg pct", ppgPercent);
 
     //if recent value is near the max value, it's a heartbeat
-    if (ppgPercent > 0.998) { //threshold for a beat detection
+    if (ppgPercent > BEAT_DETECTION_THRESHOLD) { //threshold for a beat detection
 
         //if previously false...
         if (ppg.heartbeat == false) {
@@ -29,8 +31,8 @@ function processPPG(data) {
             heartbeatTimestamps.push(new Date().getTime());
 
             //keep timestamps array from growing too long
-            if (heartbeatTimestamps.length > 6) { 
-                let diff = heartbeatTimestamps.length - 6;
+            if (heartbeatTimestamps.length > BPM_SAMPLES_MAX) { 
+                let diff = heartbeatTimestamps.length - BPM_SAMPLES_MAX;
                 heartbeatTimestamps.splice(0, diff); 
             }
 

@@ -25,7 +25,7 @@ class p5BLE {
         options = {
           filters: [{
             services: [serviceUuid],
-          }],
+          }]
         };
       } else if (typeof serviceUuidOrOptions === 'object' && serviceUuidOrOptions.filters) {
         // Options = {
@@ -136,7 +136,7 @@ class p5BLE {
   
       await characteristic.startNotifications();
   
-      console.log('> Notifications started');
+      //console.log('> Notifications started');
   
       //this runs with each update refresh from device
       this.handleNotifications = (event) => {

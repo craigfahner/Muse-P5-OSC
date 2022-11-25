@@ -1,4 +1,4 @@
-class MuseBuffer {
+class MuseDataBuffer {
 
     constructor(length) {
         //save length
