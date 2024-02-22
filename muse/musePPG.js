@@ -1,6 +1,6 @@
 let ppgBuffer = new MuseDataBuffer(64);
 let heartbeatTimestamps = []
-let BEAT_DETECTION_THRESHOLD = 0.9982 //0.998
+let BEAT_DETECTION_THRESHOLD = 0.996 //0.9982 //0.998
 let BPM_SAMPLES_MAX = 10
 
 function processPPG(data) {

@@ -30,15 +30,17 @@ function museConnected(error, characteristics) {
 
     //if muse is ready for streaming
     if (museIsReady) {
+      
+      startMuse();
 
       //then add a stream button to the page
-      const startButton = createButton('Start');
-      startButton.mousePressed(startButtonClicked);
+//       const startButton = createButton('Start');
+//       startButton.mousePressed(startButtonClicked);
 
-      function startButtonClicked() {
-        startButton.hide();
-        startMuse();
-      }
+//       function startButtonClicked() {
+//         startButton.hide();
+//         startMuse();
+//       }
     }
   }
 }

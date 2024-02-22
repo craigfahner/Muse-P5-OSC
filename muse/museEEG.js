@@ -144,7 +144,7 @@ let sensors = [
 ]
 let sensorTotal = sensors.length;
 
-let spectrum = new Array(leftEar.EEG_BUFFER_SIZE/2).fill(0);
+let eegSpectrum = new Array(leftEar.EEG_BUFFER_SIZE/2).fill(0);
 
 //global scope func to process EEG data per sensor
 function processEEG(sensor, data) {
@@ -161,7 +161,7 @@ function processEEG(sensor, data) {
         sensorSpectrums.push(sensors[i].spectrum);
     }
     //average the spectrums from all the sensors into one spectrum 
-    spectrum = _getAverageByIndex(sensorSpectrums);
+    eegSpectrum = _getAverageByIndex(sensorSpectrums);
 
     //init vars for the total of each brainwave across all sensors
     //for example, what is the average alpha across all 4 sensors

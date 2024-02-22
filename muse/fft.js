@@ -41,11 +41,6 @@ class FFT {
         this.peakBand = 0;
         this.peak = 0;
 
-        //save length
-        this.maxLength = length;
-        //fill buffer with zeroes to length
-        this._buffer = new Array(length).fill(0);
-        
         this.reverseTable = new Uint32Array(bufferSize);
 
         var limit = 1;
